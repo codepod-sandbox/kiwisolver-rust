@@ -1,3 +1,4 @@
+use cassowary::{Expression as CassowaryExpression, Term as CassowaryTerm};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyTuple};
@@ -19,6 +20,14 @@ impl TermData {
     pub(crate) fn clone_ref(&self, py: Python<'_>) -> Self {
         Self {
             variable: self.variable.clone_ref(py),
+            coefficient: self.coefficient,
+        }
+    }
+
+    pub(crate) fn to_cassowary(&self, py: Python<'_>) -> CassowaryTerm {
+        let variable = self.variable.bind(py).borrow().backend_variable();
+        CassowaryTerm {
+            variable,
             coefficient: self.coefficient,
         }
     }
@@ -90,6 +99,23 @@ impl ExpressionData {
             acc + (term.coefficient * variable.current_value())
         })
     }
+
+    pub(crate) fn to_cassowary(&self, py: Python<'_>) -> CassowaryExpression {
+        CassowaryExpression::new(
+            self.terms
+                .iter()
+                .map(|term| term.to_cassowary(py))
+                .collect(),
+            self.constant,
+        )
+    }
+
+    pub(crate) fn variables(&self, py: Python<'_>) -> Vec<Py<Variable>> {
+        self.terms
+            .iter()
+            .map(|term| term.variable.clone_ref(py))
+            .collect()
+    }
 }
 
 #[pyclass(module = "kiwisolver._kiwisolver_native")]
@@ -123,38 +149,38 @@ impl Term {
     }
 
     fn __neg__(&self, py: Python<'_>) -> PyResult<Py<Term>> {
-        create_term(
-            py,
-            self.data.variable.clone_ref(py),
-            -self.data.coefficient,
-        )
+        create_term(py, self.data.variable.clone_ref(py), -self.data.coefficient)
     }
 
     fn __add__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
         create_expression(
             py,
-            ExpressionData::from_term(self.data.clone_ref(py)).add(py, &operand_to_expression(other)?),
+            ExpressionData::from_term(self.data.clone_ref(py))
+                .add(py, &operand_to_expression(other)?),
         )
     }
 
     fn __radd__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
         create_expression(
             py,
-            operand_to_expression(other)?.add(py, &ExpressionData::from_term(self.data.clone_ref(py))),
+            operand_to_expression(other)?
+                .add(py, &ExpressionData::from_term(self.data.clone_ref(py))),
         )
     }
 
     fn __sub__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
         create_expression(
             py,
-            ExpressionData::from_term(self.data.clone_ref(py)).subtract(py, &operand_to_expression(other)?),
+            ExpressionData::from_term(self.data.clone_ref(py))
+                .subtract(py, &operand_to_expression(other)?),
         )
     }
 
     fn __rsub__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
         create_expression(
             py,
-            operand_to_expression(other)?.subtract(py, &ExpressionData::from_term(self.data.clone_ref(py))),
+            operand_to_expression(other)?
+                .subtract(py, &ExpressionData::from_term(self.data.clone_ref(py))),
         )
     }
 
@@ -178,28 +204,43 @@ impl Term {
         )
     }
 
-    fn __eq__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+    fn __eq__(
+        &self,
+        py: Python<'_>,
+        other: &Bound<'_, PyAny>,
+    ) -> PyResult<Py<constraint::Constraint>> {
         constraint::create_constraint(
             py,
-            ExpressionData::from_term(self.data.clone_ref(py)).subtract(py, &operand_to_expression(other)?),
+            ExpressionData::from_term(self.data.clone_ref(py))
+                .subtract(py, &operand_to_expression(other)?),
             "==",
             crate::strength::REQUIRED,
         )
     }
 
-    fn __ge__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+    fn __ge__(
+        &self,
+        py: Python<'_>,
+        other: &Bound<'_, PyAny>,
+    ) -> PyResult<Py<constraint::Constraint>> {
         constraint::create_constraint(
             py,
-            ExpressionData::from_term(self.data.clone_ref(py)).subtract(py, &operand_to_expression(other)?),
+            ExpressionData::from_term(self.data.clone_ref(py))
+                .subtract(py, &operand_to_expression(other)?),
             ">=",
             crate::strength::REQUIRED,
         )
     }
 
-    fn __le__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+    fn __le__(
+        &self,
+        py: Python<'_>,
+        other: &Bound<'_, PyAny>,
+    ) -> PyResult<Py<constraint::Constraint>> {
         constraint::create_constraint(
             py,
-            ExpressionData::from_term(self.data.clone_ref(py)).subtract(py, &operand_to_expression(other)?),
+            ExpressionData::from_term(self.data.clone_ref(py))
+                .subtract(py, &operand_to_expression(other)?),
             "<=",
             crate::strength::REQUIRED,
         )
@@ -275,7 +316,11 @@ impl Expression {
         create_expression(py, self.data.scaled(py, 1.0 / other))
     }
 
-    fn __eq__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+    fn __eq__(
+        &self,
+        py: Python<'_>,
+        other: &Bound<'_, PyAny>,
+    ) -> PyResult<Py<constraint::Constraint>> {
         constraint::create_constraint(
             py,
             self.data.subtract(py, &operand_to_expression(other)?),
@@ -284,7 +329,11 @@ impl Expression {
         )
     }
 
-    fn __ge__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+    fn __ge__(
+        &self,
+        py: Python<'_>,
+        other: &Bound<'_, PyAny>,
+    ) -> PyResult<Py<constraint::Constraint>> {
         constraint::create_constraint(
             py,
             self.data.subtract(py, &operand_to_expression(other)?),
@@ -293,7 +342,11 @@ impl Expression {
         )
     }
 
-    fn __le__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+    fn __le__(
+        &self,
+        py: Python<'_>,
+        other: &Bound<'_, PyAny>,
+    ) -> PyResult<Py<constraint::Constraint>> {
         constraint::create_constraint(
             py,
             self.data.subtract(py, &operand_to_expression(other)?),

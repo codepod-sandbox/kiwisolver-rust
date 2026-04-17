@@ -1,3 +1,4 @@
+use cassowary::{Constraint as CassowaryConstraint, RelationalOperator};
 use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyAny;
@@ -5,12 +6,14 @@ use pyo3::types::PyAny;
 use crate::errors;
 use crate::expression::{create_expression, Expression, ExpressionData};
 use crate::strength;
+use crate::variable::Variable;
 
 #[pyclass(module = "kiwisolver._kiwisolver_native")]
 pub struct Constraint {
     expression: ExpressionData,
     op: String,
     strength: f64,
+    backend: CassowaryConstraint,
 }
 
 #[pymethods]
@@ -30,6 +33,7 @@ impl Constraint {
             None => strength::REQUIRED,
         };
         Ok(Self {
+            backend: build_backend_constraint(py, &expression, op, strength)?,
             expression,
             op: op.to_owned(),
             strength,
@@ -82,6 +86,7 @@ pub(crate) fn create_constraint(
     Py::new(
         py,
         Constraint {
+            backend: build_backend_constraint(py, &expression, op, strength)?,
             expression,
             op: op.to_owned(),
             strength,
@@ -89,11 +94,49 @@ pub(crate) fn create_constraint(
     )
 }
 
+impl Constraint {
+    pub(crate) fn backend_constraint(&self) -> CassowaryConstraint {
+        self.backend.clone()
+    }
+
+    pub(crate) fn tracked_variables(&self, py: Python<'_>) -> Vec<Py<Variable>> {
+        self.expression.variables(py)
+    }
+}
+
 fn validate_op(op: &str) -> PyResult<()> {
     match op {
         "==" | ">=" | "<=" => Ok(()),
-        _ => Err(PyValueError::new_err("constraint operator must be one of ==, >=, <=")),
+        _ => Err(PyValueError::new_err(
+            "constraint operator must be one of ==, >=, <=",
+        )),
     }
+}
+
+fn build_backend_constraint(
+    py: Python<'_>,
+    expression: &ExpressionData,
+    op: &str,
+    strength: f64,
+) -> PyResult<CassowaryConstraint> {
+    Ok(CassowaryConstraint::new(
+        expression.to_cassowary(py),
+        relation_for_op(op)?,
+        strength,
+    ))
+}
+
+fn relation_for_op(op: &str) -> PyResult<RelationalOperator> {
+    Ok(match op {
+        "==" => RelationalOperator::Equal,
+        ">=" => RelationalOperator::GreaterOrEqual,
+        "<=" => RelationalOperator::LessOrEqual,
+        _ => {
+            return Err(PyValueError::new_err(
+                "constraint operator must be one of ==, >=, <=",
+            ))
+        }
+    })
 }
 
 pub(crate) fn resolve_strength(py: Python<'_>, value: &Bound<'_, PyAny>) -> PyResult<f64> {
@@ -111,7 +154,9 @@ pub(crate) fn resolve_strength(py: Python<'_>, value: &Bound<'_, PyAny>) -> PyRe
         };
     }
 
-    Err(PyTypeError::new_err("strength must be a number or known strength name"))
+    Err(PyTypeError::new_err(
+        "strength must be a number or known strength name",
+    ))
 }
 
 fn validate_strength_value(py: Python<'_>, value: f64) -> PyResult<f64> {

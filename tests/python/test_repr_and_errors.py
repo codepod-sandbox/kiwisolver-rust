@@ -94,3 +94,24 @@ def test_constraint_rejects_out_of_range_numeric_strength():
 
     with pytest.raises(kiwi.BadRequiredStrength):
         native.Constraint(expr, "==", native.strength.required + 1)
+
+
+def test_solver_updates_variable_values():
+    width = kiwi.Variable("width")
+    solver = kiwi.Solver()
+
+    solver.addConstraint(width == 42)
+    solver.updateVariables()
+
+    assert width.value() == 42
+
+
+def test_duplicate_constraint_raises():
+    width = kiwi.Variable("width")
+    constraint = width >= 10
+    solver = kiwi.Solver()
+
+    solver.addConstraint(constraint)
+
+    with pytest.raises(kiwi.DuplicateConstraint):
+        solver.addConstraint(constraint)

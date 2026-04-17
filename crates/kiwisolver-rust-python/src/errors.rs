@@ -20,10 +20,7 @@ pub fn register(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-pub fn get_exception_type<'py>(
-    py: Python<'py>,
-    name: &str,
-) -> PyResult<Bound<'py, PyType>> {
+pub fn get_exception_type<'py>(py: Python<'py>, name: &str) -> PyResult<Bound<'py, PyType>> {
     Ok(PyModule::import(py, "kiwisolver.exceptions")?
         .getattr(name)?
         .cast_into()?)
