@@ -6,7 +6,9 @@ import pytest
 
 def main() -> int:
     root = os.path.dirname(os.path.dirname(__file__))
-    sys.path.insert(0, os.path.join(root, "python"))
+    python_dir = os.path.join(root, "python")
+    os.environ.setdefault("PYTHONPATH", python_dir)
+    sys.path.insert(0, python_dir)
     return pytest.main(["-q", os.path.join(root, "tests", "python")])
 
 

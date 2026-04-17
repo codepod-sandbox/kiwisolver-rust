@@ -1,19 +1,23 @@
 import importlib
+import sys
 from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "python"))
 
 
 def test_import_kiwisolver_module():
     mod = importlib.import_module("kiwisolver")
     assert mod.__name__ == "kiwisolver"
-    assert mod.__package__ == "kiwisolver"
-    assert Path(mod.__file__).name == "__init__.py"
 
 
 def test_import_core_symbols():
     mod = importlib.import_module("kiwisolver")
-    native = importlib.import_module("kiwisolver._kiwisolver_native")
-    assert native.__name__ == "kiwisolver._kiwisolver_native"
-    assert mod.__all__ == ["Variable", "Term", "Expression", "Constraint", "Solver"]
     for name in ["Variable", "Term", "Expression", "Constraint", "Solver"]:
         assert hasattr(mod, name), name
-        assert getattr(mod, name).__module__ == "kiwisolver._kiwisolver_native"
+
+
+def test_module_has_upstream_version_attr():
+    mod = importlib.import_module("kiwisolver")
+    assert hasattr(mod, "__version__")

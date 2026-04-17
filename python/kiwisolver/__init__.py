@@ -1,4 +1,42 @@
-from ._kiwisolver_native import Constraint, Expression, Solver, Term, Variable
+# --------------------------------------------------------------------------------------
+# Copyright (c) 2013-2026, Nucleic Development Team.
+#
+# Distributed under the terms of the Modified BSD License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+# --------------------------------------------------------------------------------------
+from ._cext import (
+    Constraint,
+    Expression,
+    Solver,
+    Term,
+    Variable,
+    __kiwi_version__,
+    __version__,
+    strength,
+)
+from .exceptions import (
+    BadRequiredStrength,
+    DuplicateConstraint,
+    DuplicateEditVariable,
+    UnknownConstraint,
+    UnknownEditVariable,
+    UnsatisfiableConstraint,
+)
 
-__all__ = ["Variable", "Term", "Expression", "Constraint", "Solver"]
-__version__ = "1.5.0.dev0"
+__all__ = [
+    "BadRequiredStrength",
+    "Constraint",
+    "DuplicateConstraint",
+    "DuplicateEditVariable",
+    "Expression",
+    "Solver",
+    "Term",
+    "UnknownConstraint",
+    "UnknownEditVariable",
+    "UnsatisfiableConstraint",
+    "Variable",
+    "__kiwi_version__",
+    "__version__",
+    "strength",
+]
