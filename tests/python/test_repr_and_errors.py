@@ -138,19 +138,26 @@ def test_unknown_edit_variable_errors_preserve_payload_and_do_not_track_variable
     width = kiwi.Variable("width")
     solver = kiwi.Solver()
 
-    initial_dump = solver.dumps()
-    assert "width" not in initial_dump
     assert solver.hasEditVariable(width) is False
-    assert solver.dumps() == initial_dump
 
     with pytest.raises(kiwi.UnknownEditVariable) as suggest_exc:
         solver.suggestValue(width, 10)
 
     assert suggest_exc.value.edit_variable is width
-    assert solver.dumps() == initial_dump
+    assert solver.hasEditVariable(width) is False
 
     with pytest.raises(kiwi.UnknownEditVariable) as remove_exc:
         solver.removeEditVariable(width)
 
     assert remove_exc.value.edit_variable is width
-    assert solver.dumps() == initial_dump
+    assert solver.hasEditVariable(width) is False
+
+
+def test_solver_dump_methods_are_not_implemented_yet():
+    solver = kiwi.Solver()
+
+    with pytest.raises(NotImplementedError, match="backend dump is not available"):
+        solver.dumps()
+
+    with pytest.raises(NotImplementedError, match="backend dump is not available"):
+        solver.dump()

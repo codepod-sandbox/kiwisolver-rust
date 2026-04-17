@@ -4,7 +4,7 @@ use cassowary::{
     AddConstraintError, AddEditVariableError, RemoveConstraintError, RemoveEditVariableError,
     Solver as CassowarySolver, SuggestValueError, Variable as CassowaryVariable,
 };
-use pyo3::exceptions::PyRuntimeError;
+use pyo3::exceptions::{PyNotImplementedError, PyRuntimeError};
 use pyo3::prelude::*;
 use pyo3::types::PyAny;
 
@@ -142,37 +142,12 @@ impl Solver {
         self.edit_variables.clear();
     }
 
-    fn dump(&self, py: Python<'_>) {
-        println!("{}", self.dumps(py));
+    fn dump(&self) -> PyResult<()> {
+        Err(Self::dump_unavailable_error())
     }
 
-    fn dumps(&self, py: Python<'_>) -> String {
-        let mut variable_entries = self
-            .active_variables(py)
-            .into_values()
-            .map(|variable| {
-                let variable_ref = variable.bind(py).borrow();
-                format!(
-                    "{} = {}",
-                    variable_ref.name_ref(),
-                    variable_ref.current_value()
-                )
-            })
-            .collect::<Vec<_>>();
-        variable_entries.sort();
-
-        let variables_body = if variable_entries.is_empty() {
-            "  <none>".to_owned()
-        } else {
-            format!("  {}", variable_entries.join("\n  "))
-        };
-
-        format!(
-            "Fallback solver summary (backend dump unavailable from cassowary 0.3)\nedit_variables: {}\nconstraints: {}\nvariables:\n{}",
-            self.edit_variables.len(),
-            self.constraints.len(),
-            variables_body
-        )
+    fn dumps(&self) -> PyResult<String> {
+        Err(Self::dump_unavailable_error())
     }
 }
 
@@ -213,6 +188,10 @@ impl Solver {
         let active_variables = self.active_variables(py);
         self.variables
             .retain(|backend, _| active_variables.contains_key(backend));
+    }
+
+    fn dump_unavailable_error() -> PyErr {
+        PyNotImplementedError::new_err("solver backend dump is not available from cassowary 0.3")
     }
 }
 
