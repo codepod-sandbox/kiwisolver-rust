@@ -105,3 +105,24 @@ def test_solver_dumps_contains_upstream_state_sections():
 
     for header in ("Objective", "Tableau", "Variables", "Constraints"):
         assert header in state
+
+
+def test_solver_dumps_does_not_retain_stale_variable_names_after_solver_is_emptied():
+    first = kiwi.Variable("foo")
+    second = kiwi.Variable("bar")
+    solver = kiwi.Solver()
+    constraint = first + second == 0
+
+    solver.addEditVariable(second, kiwi.strength.weak)
+    solver.addConstraint(constraint)
+
+    active_state = solver.dumps()
+    assert "foo" in active_state
+    assert "bar" in active_state
+
+    solver.removeConstraint(constraint)
+    solver.removeEditVariable(second)
+
+    emptied_state = solver.dumps()
+    assert "foo" not in emptied_state
+    assert "bar" not in emptied_state

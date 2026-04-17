@@ -62,6 +62,7 @@ impl Solver {
             .map_err(|err| map_remove_constraint_error(py, err, constraint.clone_ref(py)))?;
         self.constraints
             .retain(|existing| existing.as_ptr() != constraint.as_ptr());
+        self.prune_tracked_variables(py);
         Ok(())
     }
 
@@ -96,6 +97,7 @@ impl Solver {
             .map_err(|err| map_remove_edit_variable_error(py, err, variable.clone_ref(py)))?;
         self.edit_variables
             .retain(|existing| existing.as_ptr() != variable.as_ptr());
+        self.prune_tracked_variables(py);
         Ok(())
     }
 
@@ -146,8 +148,8 @@ impl Solver {
 
     fn dumps(&self, py: Python<'_>) -> String {
         let mut variable_entries = self
-            .variables
-            .values()
+            .active_variables(py)
+            .into_values()
             .map(|variable| {
                 let variable_ref = variable.bind(py).borrow();
                 format!(
@@ -180,22 +182,14 @@ impl Solver {
             .collect::<Vec<_>>();
         edit_variable_entries.sort();
 
-        let objective_body = if edit_variable_entries.is_empty() {
-            "  edit_variables: none".to_owned()
-        } else {
-            format!("  edit_variables: {}", edit_variable_entries.join(", "))
-        };
+        let objective_body = format!("  edit_variables: {}", edit_variable_entries.len());
         let tableau_body = format!("  rows: {}", self.constraints.len());
         let variables_body = if variable_entries.is_empty() {
             "  <none>".to_owned()
         } else {
             format!("  {}", variable_entries.join("\n  "))
         };
-        let constraints_body = if constraint_entries.is_empty() {
-            "  <none>".to_owned()
-        } else {
-            format!("  {}", constraint_entries.join("\n  "))
-        };
+        let constraints_body = format!("  count: {}", constraint_entries.len());
 
         format!(
             "Objective\n{objective_body}\nTableau\n{tableau_body}\nVariables\n{variables_body}\nConstraints\n{constraints_body}"
@@ -213,6 +207,33 @@ impl Solver {
         self.variables
             .entry(backend)
             .or_insert_with(|| variable.clone_ref(py));
+    }
+
+    fn active_variables(&self, py: Python<'_>) -> HashMap<CassowaryVariable, Py<Variable>> {
+        let mut active_variables = HashMap::new();
+
+        for constraint in &self.constraints {
+            let constraint_ref = constraint.bind(py).borrow();
+            for variable in constraint_ref.tracked_variables(py) {
+                let backend = Self::backend_variable(py, &variable);
+                active_variables.entry(backend).or_insert(variable);
+            }
+        }
+
+        for variable in &self.edit_variables {
+            let backend = Self::backend_variable(py, variable);
+            active_variables
+                .entry(backend)
+                .or_insert_with(|| variable.clone_ref(py));
+        }
+
+        active_variables
+    }
+
+    fn prune_tracked_variables(&mut self, py: Python<'_>) {
+        let active_variables = self.active_variables(py);
+        self.variables
+            .retain(|backend, _| active_variables.contains_key(backend));
     }
 }
 

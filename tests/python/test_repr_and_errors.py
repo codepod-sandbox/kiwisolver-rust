@@ -139,8 +139,6 @@ def test_unknown_edit_variable_errors_preserve_payload_and_do_not_track_variable
     solver = kiwi.Solver()
 
     initial_dump = solver.dumps()
-    assert "Objective" in initial_dump
-    assert "edit_variables: none" in initial_dump
     assert "width" not in initial_dump
     assert solver.hasEditVariable(width) is False
     assert solver.dumps() == initial_dump
