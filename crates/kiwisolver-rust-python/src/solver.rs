@@ -4,7 +4,7 @@ use cassowary::{
     AddConstraintError, AddEditVariableError, RemoveConstraintError, RemoveEditVariableError,
     Solver as CassowarySolver, SuggestValueError, Variable as CassowaryVariable,
 };
-use pyo3::exceptions::{PyNotImplementedError, PyRuntimeError};
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyAny;
 
@@ -142,12 +142,34 @@ impl Solver {
         self.edit_variables.clear();
     }
 
-    fn dump(&self) -> PyResult<()> {
-        Err(Self::dump_unavailable_error())
+    fn dump(&self, py: Python<'_>) -> PyResult<()> {
+        let state = self.dumps(py)?;
+        let sys = py.import("sys")?;
+        sys.getattr("stdout")?.call_method1("write", (state,))?;
+        Ok(())
     }
 
-    fn dumps(&self) -> PyResult<String> {
-        Err(Self::dump_unavailable_error())
+    fn dumps(&self, py: Python<'_>) -> PyResult<String> {
+        let mut lines = self
+            .solver
+            .debug_dump()
+            .lines()
+            .map(str::to_owned)
+            .collect::<Vec<_>>();
+
+        lines.push("Variables".to_owned());
+        for line in self.variable_dump_lines(py) {
+            lines.push(line);
+        }
+        lines.push(String::new());
+
+        lines.push("Constraints".to_owned());
+        for line in self.constraint_dump_lines(py) {
+            lines.push(line);
+        }
+        lines.push(String::new());
+
+        Ok(lines.join("\n"))
     }
 }
 
@@ -190,8 +212,67 @@ impl Solver {
             .retain(|backend, _| active_variables.contains_key(backend));
     }
 
-    fn dump_unavailable_error() -> PyErr {
-        PyNotImplementedError::new_err("solver backend dump is not available from cassowary 0.3")
+    fn variable_dump_lines(&self, py: Python<'_>) -> Vec<String> {
+        let mut variables = self
+            .variables
+            .iter()
+            .map(|(&backend, variable)| {
+                let variable_ref = variable.bind(py).borrow();
+                (
+                    variable_ref.name_ref().to_owned(),
+                    self.solver.get_value(backend),
+                )
+            })
+            .collect::<Vec<_>>();
+        variables.sort_by(|left, right| left.0.cmp(&right.0));
+
+        if variables.is_empty() {
+            return vec!["  <none>".to_owned()];
+        }
+
+        variables
+            .into_iter()
+            .map(|(name, value)| format!("  {name} = {value}"))
+            .collect()
+    }
+
+    fn constraint_dump_lines(&self, py: Python<'_>) -> Vec<String> {
+        let mut constraints = self
+            .constraints
+            .iter()
+            .map(|constraint| {
+                let constraint_ref = constraint.bind(py).borrow();
+                let expression = constraint_ref.expression_data();
+                let mut term_strings = expression
+                    .terms
+                    .iter()
+                    .map(|term| {
+                        let variable = term.variable.bind(py).borrow();
+                        format!("{}*{}", term.coefficient, variable.name_ref())
+                    })
+                    .collect::<Vec<_>>();
+                term_strings.sort();
+                format!(
+                    "  {} {} 0 [strength={}]",
+                    if term_strings.is_empty() {
+                        expression.constant.to_string()
+                    } else if expression.constant == 0.0 {
+                        term_strings.join(" + ")
+                    } else {
+                        format!("{} + {}", term_strings.join(" + "), expression.constant)
+                    },
+                    constraint_ref.op_str(),
+                    constraint_ref.strength_value()
+                )
+            })
+            .collect::<Vec<_>>();
+        constraints.sort();
+
+        if constraints.is_empty() {
+            return vec!["  <none>".to_owned()];
+        }
+
+        constraints
     }
 }
 

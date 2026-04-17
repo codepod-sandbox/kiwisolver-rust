@@ -460,7 +460,7 @@ impl From<WeightedRelation> for (RelationalOperator, f64) {
 /// directly.
 pub struct PartialConstraint(Expression, WeightedRelation);
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum SymbolType {
     Invalid,
     External,
@@ -469,7 +469,7 @@ enum SymbolType {
     Dummy
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 struct Symbol(usize, SymbolType);
 
 impl Symbol {
@@ -477,7 +477,7 @@ impl Symbol {
     fn type_(&self) -> SymbolType { self.1 }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Row {
     cells: BTreeMap<Symbol, f64>,
     constant: f64

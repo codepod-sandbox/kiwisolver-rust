@@ -79,6 +79,25 @@ impl Solver {
         Ok(())
     }
 
+    pub fn debug_dump(&self) -> String {
+        let mut lines = Vec::new();
+        lines.push("Objective".to_owned());
+        lines.push(format!("  {:?}", self.objective.borrow()));
+        lines.push(String::new());
+
+        lines.push("Tableau".to_owned());
+        if self.rows.is_empty() {
+            lines.push("  <none>".to_owned());
+        } else {
+            for (symbol, row) in &self.rows {
+                lines.push(format!("  {:?} => {:?}", symbol, row));
+            }
+        }
+        lines.push(String::new());
+
+        lines.join("\n")
+    }
+
     /// Add a constraint to the solver.
     pub fn add_constraint(&mut self, constraint: Constraint) -> Result<(), AddConstraintError> {
         if self.cns.contains_key(&constraint) {

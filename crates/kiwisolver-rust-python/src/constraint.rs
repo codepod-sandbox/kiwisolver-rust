@@ -99,6 +99,10 @@ impl Constraint {
         self.backend.clone()
     }
 
+    pub(crate) fn expression_data(&self) -> &ExpressionData {
+        &self.expression
+    }
+
     pub(crate) fn op_str(&self) -> &str {
         &self.op
     }

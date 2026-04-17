@@ -153,11 +153,13 @@ def test_unknown_edit_variable_errors_preserve_payload_and_do_not_track_variable
     assert solver.hasEditVariable(width) is False
 
 
-def test_solver_dump_methods_are_not_implemented_yet():
+def test_solver_dump_methods_are_available():
     solver = kiwi.Solver()
 
-    with pytest.raises(NotImplementedError, match="backend dump is not available"):
-        solver.dumps()
+    state = solver.dumps()
 
-    with pytest.raises(NotImplementedError, match="backend dump is not available"):
-        solver.dump()
+    assert "Objective" in state
+    assert "Tableau" in state
+    assert "Variables" in state
+    assert "Constraints" in state
+    assert "<none>" in state
