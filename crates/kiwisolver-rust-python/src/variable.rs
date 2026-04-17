@@ -164,6 +164,10 @@ impl Variable {
 }
 
 impl Variable {
+    pub(crate) fn name_ref(&self) -> &str {
+        &self.name
+    }
+
     pub(crate) fn current_value(&self) -> f64 {
         self.value
     }

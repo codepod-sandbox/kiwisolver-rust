@@ -99,6 +99,14 @@ impl Constraint {
         self.backend.clone()
     }
 
+    pub(crate) fn op_str(&self) -> &str {
+        &self.op
+    }
+
+    pub(crate) fn strength_value(&self) -> f64 {
+        self.strength
+    }
+
     pub(crate) fn tracked_variables(&self, py: Python<'_>) -> Vec<Py<Variable>> {
         self.expression.variables(py)
     }

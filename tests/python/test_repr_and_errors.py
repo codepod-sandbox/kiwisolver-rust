@@ -138,18 +138,21 @@ def test_unknown_edit_variable_errors_preserve_payload_and_do_not_track_variable
     width = kiwi.Variable("width")
     solver = kiwi.Solver()
 
-    assert solver.dumps() == "Solver(num_variables=0)"
+    initial_dump = solver.dumps()
+    assert "Objective" in initial_dump
+    assert "edit_variables: none" in initial_dump
+    assert "width" not in initial_dump
     assert solver.hasEditVariable(width) is False
-    assert solver.dumps() == "Solver(num_variables=0)"
+    assert solver.dumps() == initial_dump
 
     with pytest.raises(kiwi.UnknownEditVariable) as suggest_exc:
         solver.suggestValue(width, 10)
 
     assert suggest_exc.value.edit_variable is width
-    assert solver.dumps() == "Solver(num_variables=0)"
+    assert solver.dumps() == initial_dump
 
     with pytest.raises(kiwi.UnknownEditVariable) as remove_exc:
         solver.removeEditVariable(width)
 
     assert remove_exc.value.edit_variable is width
-    assert solver.dumps() == "Solver(num_variables=0)"
+    assert solver.dumps() == initial_dump

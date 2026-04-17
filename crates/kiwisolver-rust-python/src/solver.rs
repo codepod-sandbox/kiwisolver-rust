@@ -16,6 +16,8 @@ use crate::variable::Variable;
 pub struct Solver {
     solver: CassowarySolver,
     variables: HashMap<CassowaryVariable, Py<Variable>>,
+    constraints: Vec<Py<Constraint>>,
+    edit_variables: Vec<Py<Variable>>,
 }
 
 #[pymethods]
@@ -25,6 +27,8 @@ impl Solver {
         Self {
             solver: CassowarySolver::new(),
             variables: HashMap::new(),
+            constraints: Vec::new(),
+            edit_variables: Vec::new(),
         }
     }
 
@@ -45,6 +49,7 @@ impl Solver {
         for variable in variables {
             self.track_variable(py, variable);
         }
+        self.constraints.push(constraint);
 
         Ok(())
     }
@@ -54,7 +59,10 @@ impl Solver {
         let backend = constraint.bind(py).borrow().backend_constraint();
         self.solver
             .remove_constraint(&backend)
-            .map_err(|err| map_remove_constraint_error(py, err, constraint))
+            .map_err(|err| map_remove_constraint_error(py, err, constraint.clone_ref(py)))?;
+        self.constraints
+            .retain(|existing| existing.as_ptr() != constraint.as_ptr());
+        Ok(())
     }
 
     #[pyo3(name = "hasConstraint")]
@@ -75,7 +83,8 @@ impl Solver {
         self.solver
             .add_edit_variable(backend, strength)
             .map_err(|err| map_add_edit_variable_error(py, err, variable.clone_ref(py)))?;
-        self.track_variable(py, variable);
+        self.track_variable(py, variable.clone_ref(py));
+        self.edit_variables.push(variable);
         Ok(())
     }
 
@@ -84,7 +93,10 @@ impl Solver {
         let backend = Self::backend_variable(py, &variable);
         self.solver
             .remove_edit_variable(backend)
-            .map_err(|err| map_remove_edit_variable_error(py, err, variable))
+            .map_err(|err| map_remove_edit_variable_error(py, err, variable.clone_ref(py)))?;
+        self.edit_variables
+            .retain(|existing| existing.as_ptr() != variable.as_ptr());
+        Ok(())
     }
 
     #[pyo3(name = "hasEditVariable")]
@@ -124,14 +136,70 @@ impl Solver {
         }
 
         self.variables.clear();
+        self.constraints.clear();
+        self.edit_variables.clear();
     }
 
-    fn dump(&self) {
-        println!("{}", self.dumps());
+    fn dump(&self, py: Python<'_>) {
+        println!("{}", self.dumps(py));
     }
 
-    fn dumps(&self) -> String {
-        format!("Solver(num_variables={})", self.variables.len())
+    fn dumps(&self, py: Python<'_>) -> String {
+        let mut variable_entries = self
+            .variables
+            .values()
+            .map(|variable| {
+                let variable_ref = variable.bind(py).borrow();
+                format!(
+                    "{} = {}",
+                    variable_ref.name_ref(),
+                    variable_ref.current_value()
+                )
+            })
+            .collect::<Vec<_>>();
+        variable_entries.sort();
+
+        let mut constraint_entries = self
+            .constraints
+            .iter()
+            .map(|constraint| {
+                let constraint_ref = constraint.bind(py).borrow();
+                format!(
+                    "{} @ {}",
+                    constraint_ref.op_str(),
+                    constraint_ref.strength_value()
+                )
+            })
+            .collect::<Vec<_>>();
+        constraint_entries.sort();
+
+        let mut edit_variable_entries = self
+            .edit_variables
+            .iter()
+            .map(|variable| variable.bind(py).borrow().name_ref().to_owned())
+            .collect::<Vec<_>>();
+        edit_variable_entries.sort();
+
+        let objective_body = if edit_variable_entries.is_empty() {
+            "  edit_variables: none".to_owned()
+        } else {
+            format!("  edit_variables: {}", edit_variable_entries.join(", "))
+        };
+        let tableau_body = format!("  rows: {}", self.constraints.len());
+        let variables_body = if variable_entries.is_empty() {
+            "  <none>".to_owned()
+        } else {
+            format!("  {}", variable_entries.join("\n  "))
+        };
+        let constraints_body = if constraint_entries.is_empty() {
+            "  <none>".to_owned()
+        } else {
+            format!("  {}", constraint_entries.join("\n  "))
+        };
+
+        format!(
+            "Objective\n{objective_body}\nTableau\n{tableau_body}\nVariables\n{variables_body}\nConstraints\n{constraints_body}"
+        )
     }
 }
 
