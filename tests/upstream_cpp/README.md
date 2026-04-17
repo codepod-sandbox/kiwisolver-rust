@@ -23,3 +23,5 @@ Current local tranche coverage:
   Covers `SolverTest.cpp :: SolvingWithStrength`.
 - `tests/python/test_upstream_solver_tranche3.py`
   Covers `SolverTest.cpp :: SuggestingValuesForEditVariables`, `SolverTest.cpp :: SolvingUnderConstrainedSystem`, `SolverTest.cpp :: HandlingInfeasibleConstraints`, and `SolverTest.cpp :: ConstraintViolated`.
+- `tests/python/test_upstream_surface_tranche4.py`
+  Covers `StrengthTest.cpp :: AccessingPredefinedStrength`, `ConstraintTest.cpp :: ConstraintCreationEQ`, `ConstraintTest.cpp :: ConstraintCreationLE`, `ConstraintTest.cpp :: ConstraintCreationGE`, `VariableTest.cpp :: VariableMethods`, `VariableTest.cpp :: VariableNeg`, `VariableTest.cpp :: VariableMul`, `VariableTest.cpp :: VariableDivision`, `VariableTest.cpp :: VariableAddition`, `VariableTest.cpp :: VariableSubtraction`, `VariableTest.cpp :: VariableRichCompareOperations`, `TermTest.cpp :: TermCreation`, `TermTest.cpp :: TermNeg`, `TermTest.cpp :: TermMul`, `TermTest.cpp :: TermDiv`, `TermTest.cpp :: TermAdd`, `TermTest.cpp :: TermSub`, and `TermTest.cpp :: TermRichCompareOperations`.
