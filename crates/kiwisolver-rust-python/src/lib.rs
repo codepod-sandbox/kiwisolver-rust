@@ -1,7 +1,9 @@
-use pyo3::prelude::*;
+mod errors;
+mod strength;
+mod variable;
 
-#[pyclass(module = "kiwisolver._kiwisolver_native")]
-struct Variable;
+use pyo3::prelude::*;
+use variable::Variable;
 
 #[pyclass(module = "kiwisolver._kiwisolver_native")]
 struct Term;
@@ -23,5 +25,7 @@ fn kiwisolver(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expression>()?;
     m.add_class::<Constraint>()?;
     m.add_class::<Solver>()?;
+    errors::register(m)?;
+    strength::register(_py, m)?;
     Ok(())
 }

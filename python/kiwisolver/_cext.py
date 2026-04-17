@@ -45,4 +45,4 @@ class _Strength:
         return ((a * 1000000.0) + (b * 1000.0) + c) * weight
 
 
-strength = _Strength()
+strength = getattr(_native, "strength", _Strength())

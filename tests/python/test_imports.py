@@ -25,7 +25,9 @@ def test_module_has_upstream_version_attr():
 
 def test_temporary_shim_is_explicit():
     cext = importlib.import_module("kiwisolver._cext")
+    native = importlib.import_module("kiwisolver._kiwisolver_native")
     assert cext.__kiwisolver_native_shim__ is True
     assert cext.__version__.endswith("+shim")
     assert cext.__kiwi_version__.endswith("+shim")
-    assert type(cext.strength).__name__ == "_Strength"
+    assert isinstance(cext.strength.required, (int, float))
+    assert isinstance(native.strength.required, (int, float))
