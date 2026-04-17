@@ -161,38 +161,17 @@ impl Solver {
             .collect::<Vec<_>>();
         variable_entries.sort();
 
-        let mut constraint_entries = self
-            .constraints
-            .iter()
-            .map(|constraint| {
-                let constraint_ref = constraint.bind(py).borrow();
-                format!(
-                    "{} @ {}",
-                    constraint_ref.op_str(),
-                    constraint_ref.strength_value()
-                )
-            })
-            .collect::<Vec<_>>();
-        constraint_entries.sort();
-
-        let mut edit_variable_entries = self
-            .edit_variables
-            .iter()
-            .map(|variable| variable.bind(py).borrow().name_ref().to_owned())
-            .collect::<Vec<_>>();
-        edit_variable_entries.sort();
-
-        let objective_body = format!("  edit_variables: {}", edit_variable_entries.len());
-        let tableau_body = format!("  rows: {}", self.constraints.len());
         let variables_body = if variable_entries.is_empty() {
             "  <none>".to_owned()
         } else {
             format!("  {}", variable_entries.join("\n  "))
         };
-        let constraints_body = format!("  count: {}", constraint_entries.len());
 
         format!(
-            "Objective\n{objective_body}\nTableau\n{tableau_body}\nVariables\n{variables_body}\nConstraints\n{constraints_body}"
+            "Fallback solver summary (backend dump unavailable from cassowary 0.3)\nedit_variables: {}\nconstraints: {}\nvariables:\n{}",
+            self.edit_variables.len(),
+            self.constraints.len(),
+            variables_body
         )
     }
 }

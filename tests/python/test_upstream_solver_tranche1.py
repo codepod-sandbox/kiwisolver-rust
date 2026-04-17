@@ -86,8 +86,7 @@ def test_solver_edit_variable_management_matches_upstream_contract():
     assert solver.hasEditVariable(second) is False
 
 
-# Upstream: tests/SolverTest.cpp :: DumpingSolver
-def test_solver_dumps_contains_upstream_state_sections():
+def test_solver_dumps_is_explicitly_non_upstream_fallback_summary():
     first = kiwi.Variable("foo")
     second = kiwi.Variable("bar")
     solver = kiwi.Solver()
@@ -103,8 +102,10 @@ def test_solver_dumps_contains_upstream_state_sections():
 
     state = solver.dumps()
 
-    for header in ("Objective", "Tableau", "Variables", "Constraints"):
-        assert header in state
+    assert "Fallback solver summary" in state
+    assert "backend dump unavailable" in state
+    assert "foo" in state
+    assert "bar" in state
 
 
 def test_solver_dumps_does_not_retain_stale_variable_names_after_solver_is_emptied():
