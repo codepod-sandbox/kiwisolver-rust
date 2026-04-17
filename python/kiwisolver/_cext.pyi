@@ -5,6 +5,10 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # --------------------------------------------------------------------------------------
+#
+# This file is vendored as the upstream target API contract. It documents the
+# expected runtime surface, but it is not evidence that the current Rust native
+# module fully implements every member yet.
 
 from typing import Any, Iterable, NoReturn, Tuple, type_check_only
 

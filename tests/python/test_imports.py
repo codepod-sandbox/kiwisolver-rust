@@ -21,3 +21,11 @@ def test_import_core_symbols():
 def test_module_has_upstream_version_attr():
     mod = importlib.import_module("kiwisolver")
     assert hasattr(mod, "__version__")
+
+
+def test_temporary_shim_is_explicit():
+    cext = importlib.import_module("kiwisolver._cext")
+    assert cext.__kiwisolver_native_shim__ is True
+    assert cext.__version__.endswith("+shim")
+    assert cext.__kiwi_version__.endswith("+shim")
+    assert type(cext.strength).__name__ == "_Strength"

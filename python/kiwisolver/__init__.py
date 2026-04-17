@@ -5,6 +5,9 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # --------------------------------------------------------------------------------------
+# The public package surface is vendored from upstream and routed through a
+# temporary `_cext` compatibility shim until the Rust native module provides
+# the full runtime API.
 from ._cext import (
     Constraint,
     Expression,
