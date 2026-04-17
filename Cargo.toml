@@ -1,3 +1,6 @@
 [workspace]
 members = ["crates/kiwisolver-rust-python"]
 resolver = "2"
+
+[patch.crates-io]
+cassowary = { path = "third_party/cassowary-fork" }
