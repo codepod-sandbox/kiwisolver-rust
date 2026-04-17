@@ -1,7 +1,8 @@
-use pyo3::exceptions::PyTypeError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyAny;
 
+use crate::errors;
 use crate::expression::{create_expression, Expression, ExpressionData};
 use crate::strength;
 
@@ -23,8 +24,9 @@ impl Constraint {
         strength: Option<&Bound<'_, PyAny>>,
     ) -> PyResult<Self> {
         let expression = expression.bind(py).borrow().data.clone_ref(py);
+        validate_op(op)?;
         let strength = match strength {
-            Some(value) => resolve_strength(value)?,
+            Some(value) => resolve_strength(py, value)?,
             None => strength::REQUIRED,
         };
         Ok(Self {
@@ -57,7 +59,12 @@ impl Constraint {
     }
 
     fn __or__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Constraint>> {
-        create_constraint(py, self.expression.clone_ref(py), &self.op, resolve_strength(other)?)
+        create_constraint(
+            py,
+            self.expression.clone_ref(py),
+            &self.op,
+            resolve_strength(py, other)?,
+        )
     }
 
     fn __ror__(&self, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Constraint>> {
@@ -71,6 +78,7 @@ pub(crate) fn create_constraint(
     op: &str,
     strength: f64,
 ) -> PyResult<Py<Constraint>> {
+    validate_op(op)?;
     Py::new(
         py,
         Constraint {
@@ -81,9 +89,16 @@ pub(crate) fn create_constraint(
     )
 }
 
-pub(crate) fn resolve_strength(value: &Bound<'_, PyAny>) -> PyResult<f64> {
+fn validate_op(op: &str) -> PyResult<()> {
+    match op {
+        "==" | ">=" | "<=" => Ok(()),
+        _ => Err(PyValueError::new_err("constraint operator must be one of ==, >=, <=")),
+    }
+}
+
+pub(crate) fn resolve_strength(py: Python<'_>, value: &Bound<'_, PyAny>) -> PyResult<f64> {
     if let Ok(strength) = value.extract::<f64>() {
-        return Ok(strength);
+        return validate_strength_value(py, strength);
     }
 
     if let Ok(name) = value.extract::<&str>() {
@@ -97,4 +112,16 @@ pub(crate) fn resolve_strength(value: &Bound<'_, PyAny>) -> PyResult<f64> {
     }
 
     Err(PyTypeError::new_err("strength must be a number or known strength name"))
+}
+
+fn validate_strength_value(py: Python<'_>, value: f64) -> PyResult<f64> {
+    if (0.0..=strength::REQUIRED).contains(&value) {
+        return Ok(value);
+    }
+
+    let exc = errors::get_exception_type(py, "BadRequiredStrength")?;
+    Err(PyErr::from_type(
+        exc,
+        "constraint strength must be within [0, required]",
+    ))
 }

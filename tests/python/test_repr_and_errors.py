@@ -62,3 +62,35 @@ def test_constraint_creation_with_required_strength():
     constraint = (width >= 10) | "required"
 
     assert isinstance(constraint, kiwi.Constraint)
+
+
+def test_variable_negation_creates_term():
+    width = kiwi.Variable("width")
+
+    term = -width
+
+    assert isinstance(term, kiwi.Term)
+
+
+def test_variable_division_creates_term():
+    width = kiwi.Variable("width")
+
+    term = width / 2
+
+    assert isinstance(term, kiwi.Term)
+
+
+def test_constraint_rejects_unknown_operator():
+    width = kiwi.Variable("width")
+    expr = 2 * width + 10
+
+    with pytest.raises(ValueError):
+        native.Constraint(expr, "!=")
+
+
+def test_constraint_rejects_out_of_range_numeric_strength():
+    width = kiwi.Variable("width")
+    expr = 2 * width + 10
+
+    with pytest.raises(kiwi.BadRequiredStrength):
+        native.Constraint(expr, "==", native.strength.required + 1)

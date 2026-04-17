@@ -52,12 +52,20 @@ impl Variable {
         format!("Variable('{}')", self.name)
     }
 
+    fn __neg__(slf: Py<Self>, py: Python<'_>) -> PyResult<Py<expression::Term>> {
+        expression::create_term(py, slf, -1.0)
+    }
+
     fn __mul__(slf: Py<Self>, py: Python<'_>, other: f64) -> PyResult<Py<expression::Term>> {
         expression::create_term(py, slf, other)
     }
 
     fn __rmul__(slf: Py<Self>, py: Python<'_>, other: f64) -> PyResult<Py<expression::Term>> {
         expression::create_term(py, slf, other)
+    }
+
+    fn __truediv__(slf: Py<Self>, py: Python<'_>, other: f64) -> PyResult<Py<expression::Term>> {
+        expression::create_term(py, slf, 1.0 / other)
     }
 
     fn __add__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
