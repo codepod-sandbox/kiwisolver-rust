@@ -38,13 +38,15 @@ impl Solver {
             )
         };
 
-        for variable in variables {
-            self.register_variable(py, variable);
-        }
-
         self.solver
             .add_constraint(backend)
-            .map_err(|err| map_add_constraint_error(py, err))
+            .map_err(|err| map_add_constraint_error(py, err, constraint.clone_ref(py)))?;
+
+        for variable in variables {
+            self.track_variable(py, variable);
+        }
+
+        Ok(())
     }
 
     #[pyo3(name = "removeConstraint")]
@@ -52,7 +54,7 @@ impl Solver {
         let backend = constraint.bind(py).borrow().backend_constraint();
         self.solver
             .remove_constraint(&backend)
-            .map_err(|err| map_remove_constraint_error(py, err))
+            .map_err(|err| map_remove_constraint_error(py, err, constraint))
     }
 
     #[pyo3(name = "hasConstraint")]
@@ -69,23 +71,25 @@ impl Solver {
         strength: &Bound<'_, PyAny>,
     ) -> PyResult<()> {
         let strength = resolve_strength(py, strength)?;
-        let backend = self.register_variable(py, variable);
+        let backend = Self::backend_variable(py, &variable);
         self.solver
             .add_edit_variable(backend, strength)
-            .map_err(|err| map_add_edit_variable_error(py, err))
+            .map_err(|err| map_add_edit_variable_error(py, err, variable.clone_ref(py)))?;
+        self.track_variable(py, variable);
+        Ok(())
     }
 
     #[pyo3(name = "removeEditVariable")]
     fn remove_edit_variable(&mut self, py: Python<'_>, variable: Py<Variable>) -> PyResult<()> {
-        let backend = self.register_variable(py, variable);
+        let backend = Self::backend_variable(py, &variable);
         self.solver
             .remove_edit_variable(backend)
-            .map_err(|err| map_remove_edit_variable_error(py, err))
+            .map_err(|err| map_remove_edit_variable_error(py, err, variable))
     }
 
     #[pyo3(name = "hasEditVariable")]
-    fn has_edit_variable(&mut self, py: Python<'_>, variable: Py<Variable>) -> bool {
-        let backend = self.register_variable(py, variable);
+    fn has_edit_variable(&self, py: Python<'_>, variable: Py<Variable>) -> bool {
+        let backend = Self::backend_variable(py, &variable);
         self.solver.has_edit_variable(&backend)
     }
 
@@ -96,10 +100,10 @@ impl Solver {
         variable: Py<Variable>,
         value: f64,
     ) -> PyResult<()> {
-        let backend = self.register_variable(py, variable);
+        let backend = Self::backend_variable(py, &variable);
         self.solver
             .suggest_value(backend, value)
-            .map_err(|err| map_suggest_value_error(py, err))
+            .map_err(|err| map_suggest_value_error(py, err, variable))
     }
 
     #[pyo3(name = "updateVariables")]
@@ -132,22 +136,29 @@ impl Solver {
 }
 
 impl Solver {
-    fn register_variable(&mut self, py: Python<'_>, variable: Py<Variable>) -> CassowaryVariable {
-        let backend = variable.bind(py).borrow().backend_variable();
+    fn backend_variable(py: Python<'_>, variable: &Py<Variable>) -> CassowaryVariable {
+        variable.bind(py).borrow().backend_variable()
+    }
+
+    fn track_variable(&mut self, py: Python<'_>, variable: Py<Variable>) {
+        let backend = Self::backend_variable(py, &variable);
         self.variables
             .entry(backend)
             .or_insert_with(|| variable.clone_ref(py));
-        backend
     }
 }
 
-fn map_add_constraint_error(py: Python<'_>, err: AddConstraintError) -> PyErr {
+fn map_add_constraint_error(
+    py: Python<'_>,
+    err: AddConstraintError,
+    constraint: Py<Constraint>,
+) -> PyErr {
     match err {
         AddConstraintError::DuplicateConstraint => {
-            exception(py, "DuplicateConstraint", "duplicate constraint")
+            errors::constraint_error(py, "DuplicateConstraint", constraint)
         }
         AddConstraintError::UnsatisfiableConstraint => {
-            exception(py, "UnsatisfiableConstraint", "unsatisfiable constraint")
+            errors::constraint_error(py, "UnsatisfiableConstraint", constraint)
         }
         AddConstraintError::InternalSolverError(detail) => {
             PyRuntimeError::new_err(format!("internal solver error: {detail}"))
@@ -155,10 +166,14 @@ fn map_add_constraint_error(py: Python<'_>, err: AddConstraintError) -> PyErr {
     }
 }
 
-fn map_remove_constraint_error(py: Python<'_>, err: RemoveConstraintError) -> PyErr {
+fn map_remove_constraint_error(
+    py: Python<'_>,
+    err: RemoveConstraintError,
+    constraint: Py<Constraint>,
+) -> PyErr {
     match err {
         RemoveConstraintError::UnknownConstraint => {
-            exception(py, "UnknownConstraint", "unknown constraint")
+            errors::constraint_error(py, "UnknownConstraint", constraint)
         }
         RemoveConstraintError::InternalSolverError(detail) => {
             PyRuntimeError::new_err(format!("internal solver error: {detail}"))
@@ -166,10 +181,14 @@ fn map_remove_constraint_error(py: Python<'_>, err: RemoveConstraintError) -> Py
     }
 }
 
-fn map_add_edit_variable_error(py: Python<'_>, err: AddEditVariableError) -> PyErr {
+fn map_add_edit_variable_error(
+    py: Python<'_>,
+    err: AddEditVariableError,
+    variable: Py<Variable>,
+) -> PyErr {
     match err {
         AddEditVariableError::DuplicateEditVariable => {
-            exception(py, "DuplicateEditVariable", "duplicate edit variable")
+            errors::edit_variable_error(py, "DuplicateEditVariable", variable)
         }
         AddEditVariableError::BadRequiredStrength => exception(
             py,
@@ -179,10 +198,14 @@ fn map_add_edit_variable_error(py: Python<'_>, err: AddEditVariableError) -> PyE
     }
 }
 
-fn map_remove_edit_variable_error(py: Python<'_>, err: RemoveEditVariableError) -> PyErr {
+fn map_remove_edit_variable_error(
+    py: Python<'_>,
+    err: RemoveEditVariableError,
+    variable: Py<Variable>,
+) -> PyErr {
     match err {
         RemoveEditVariableError::UnknownEditVariable => {
-            exception(py, "UnknownEditVariable", "unknown edit variable")
+            errors::edit_variable_error(py, "UnknownEditVariable", variable)
         }
         RemoveEditVariableError::InternalSolverError(detail) => {
             PyRuntimeError::new_err(format!("internal solver error: {detail}"))
@@ -190,10 +213,14 @@ fn map_remove_edit_variable_error(py: Python<'_>, err: RemoveEditVariableError) 
     }
 }
 
-fn map_suggest_value_error(py: Python<'_>, err: SuggestValueError) -> PyErr {
+fn map_suggest_value_error(
+    py: Python<'_>,
+    err: SuggestValueError,
+    variable: Py<Variable>,
+) -> PyErr {
     match err {
         SuggestValueError::UnknownEditVariable => {
-            exception(py, "UnknownEditVariable", "unknown edit variable")
+            errors::edit_variable_error(py, "UnknownEditVariable", variable)
         }
         SuggestValueError::InternalSolverError(detail) => {
             PyRuntimeError::new_err(format!("internal solver error: {detail}"))

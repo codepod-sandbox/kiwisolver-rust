@@ -68,6 +68,7 @@ impl Variable {
     }
 
     fn __truediv__(slf: Py<Self>, py: Python<'_>, other: f64) -> PyResult<Py<expression::Term>> {
+        let other = expression::checked_divisor(other)?;
         expression::create_term(py, slf, 1.0 / other)
     }
 

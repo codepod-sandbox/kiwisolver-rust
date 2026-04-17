@@ -1,5 +1,5 @@
 use cassowary::{Expression as CassowaryExpression, Term as CassowaryTerm};
-use pyo3::exceptions::PyTypeError;
+use pyo3::exceptions::{PyTypeError, PyZeroDivisionError};
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyTuple};
 
@@ -118,6 +118,14 @@ impl ExpressionData {
     }
 }
 
+pub(crate) fn checked_divisor(divisor: f64) -> PyResult<f64> {
+    if divisor == 0.0 {
+        Err(PyZeroDivisionError::new_err("division by zero"))
+    } else {
+        Ok(divisor)
+    }
+}
+
 #[pyclass(module = "kiwisolver._kiwisolver_native")]
 pub struct Term {
     pub(crate) data: TermData,
@@ -197,6 +205,7 @@ impl Term {
     }
 
     fn __truediv__(&self, py: Python<'_>, other: f64) -> PyResult<Py<Term>> {
+        let other = checked_divisor(other)?;
         create_term(
             py,
             self.data.variable.clone_ref(py),
@@ -313,6 +322,7 @@ impl Expression {
     }
 
     fn __truediv__(&self, py: Python<'_>, other: f64) -> PyResult<Py<Expression>> {
+        let other = checked_divisor(other)?;
         create_expression(py, self.data.scaled(py, 1.0 / other))
     }
 

@@ -80,6 +80,21 @@ def test_variable_division_creates_term():
     assert isinstance(term, kiwi.Term)
 
 
+def test_division_by_zero_raises():
+    width = kiwi.Variable("width")
+    term = 2 * width
+    expr = term + 10
+
+    with pytest.raises(ZeroDivisionError):
+        width / 0
+
+    with pytest.raises(ZeroDivisionError):
+        term / 0
+
+    with pytest.raises(ZeroDivisionError):
+        expr / 0
+
+
 def test_constraint_rejects_unknown_operator():
     width = kiwi.Variable("width")
     expr = 2 * width + 10
@@ -113,5 +128,28 @@ def test_duplicate_constraint_raises():
 
     solver.addConstraint(constraint)
 
-    with pytest.raises(kiwi.DuplicateConstraint):
+    with pytest.raises(kiwi.DuplicateConstraint) as exc_info:
         solver.addConstraint(constraint)
+
+    assert exc_info.value.constraint is constraint
+
+
+def test_unknown_edit_variable_errors_preserve_payload_and_do_not_track_variable():
+    width = kiwi.Variable("width")
+    solver = kiwi.Solver()
+
+    assert solver.dumps() == "Solver(num_variables=0)"
+    assert solver.hasEditVariable(width) is False
+    assert solver.dumps() == "Solver(num_variables=0)"
+
+    with pytest.raises(kiwi.UnknownEditVariable) as suggest_exc:
+        solver.suggestValue(width, 10)
+
+    assert suggest_exc.value.edit_variable is width
+    assert solver.dumps() == "Solver(num_variables=0)"
+
+    with pytest.raises(kiwi.UnknownEditVariable) as remove_exc:
+        solver.removeEditVariable(width)
+
+    assert remove_exc.value.edit_variable is width
+    assert solver.dumps() == "Solver(num_variables=0)"
