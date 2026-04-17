@@ -18,4 +18,4 @@ Current local tranche coverage:
 - `tests/python/test_upstream_solver_tranche1.py`
   Covers `StrengthTest.cpp :: CreatingStrength`, `ConstraintTest.cpp :: ConstraintCreationWithStrength`, `ConstraintTest.cpp :: ConstraintOrOperator`, and `SolverTest.cpp :: ManagingEditVariable`.
 - `tests/python/test_upstream_expression_tranche2.py`
-  Covers `ExpressionTest.cpp :: ExpressionCreation`, `ExpressionTest.cpp :: ExpressionNeg`, `ExpressionTest.cpp :: ExpressionMul`, `ExpressionTest.cpp :: ExpressionDiv`, `ExpressionTest.cpp :: ExpressionRichCompareOperations`, and `SolverTest.cpp :: ManagingConstraints`.
+  Covers `ExpressionTest.cpp :: ExpressionCreation`, `ExpressionTest.cpp :: ExpressionNeg`, `ExpressionTest.cpp :: ExpressionMul`, `ExpressionTest.cpp :: ExpressionDiv`, `ExpressionTest.cpp :: ExpressionAddition`, `ExpressionTest.cpp :: ExpressionSubtraction`, `ExpressionTest.cpp :: ExpressionRichCompareOperations`, and `SolverTest.cpp :: ManagingConstraints`.

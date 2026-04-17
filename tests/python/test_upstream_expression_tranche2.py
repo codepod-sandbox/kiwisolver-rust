@@ -11,11 +11,11 @@ import pytest
 
 def assert_term_shape(term, variable, coefficient):
     assert term.variable() is variable
-    assert term.coefficient() == pytest.approx(coefficient)
+    assert term.coefficient() == coefficient
 
 
 def assert_expression_shape(expression, constant, terms):
-    assert expression.constant() == pytest.approx(constant)
+    assert expression.constant() == constant
     actual_terms = expression.terms()
     assert len(actual_terms) == len(terms)
     for actual, (variable, coefficient) in zip(actual_terms, terms):
@@ -74,6 +74,44 @@ def test_expression_division_scales_terms_and_constant():
     assert_expression_shape(expression / 2, 2.5, [(foo, 5)])
 
 
+# Upstream: tests/ExpressionTest.cpp :: ExpressionAddition
+def test_expression_addition_matches_upstream_arithmetic_shapes():
+    foo = kiwi.Variable("foo")
+    bar = kiwi.Variable("bar")
+    term = kiwi.Term(foo, 10)
+    unit_bar = kiwi.Term(bar)
+    expression = term + 5
+    other_expression = bar - 10
+
+    assert_expression_shape(expression + 2, 7, [(foo, 10)])
+    assert_expression_shape(2.0 + expression, 7, [(foo, 10)])
+    assert_expression_shape(expression + bar, 5, [(foo, 10), (bar, 1)])
+    assert_expression_shape(expression + unit_bar, 5, [(foo, 10), (bar, 1)])
+    assert_expression_shape(expression + other_expression, -5, [(foo, 10), (bar, 1)])
+
+
+# Upstream: tests/ExpressionTest.cpp :: ExpressionSubtraction
+def test_expression_subtraction_matches_upstream_arithmetic_shapes():
+    foo = kiwi.Variable("foo")
+    bar = kiwi.Variable("bar")
+    term = kiwi.Term(foo, 10)
+    unit_bar = kiwi.Term(bar)
+    expression = term + 5
+    other_expression = bar - 10
+
+    assert_expression_shape(expression - 2, 3, [(foo, 10)])
+    assert_expression_shape(2.0 - expression, -3, [(foo, -10)])
+    assert_expression_shape(expression - bar, 5, [(foo, 10), (bar, -1)])
+    assert_expression_shape(bar - expression, -5, [(bar, 1), (foo, -10)])
+    assert_expression_shape(expression - unit_bar, 5, [(foo, 10), (bar, -1)])
+
+    unit_bar_minus_expression = unit_bar - expression
+    assert unit_bar_minus_expression.constant() == -5
+    assert len(unit_bar_minus_expression.terms()) == 2
+
+    assert_expression_shape(expression - other_expression, 15, [(foo, 10), (bar, -1)])
+
+
 # Upstream: tests/ExpressionTest.cpp :: ExpressionRichCompareOperations
 def test_expression_rich_compare_creates_required_constraints():
     foo = kiwi.Variable("foo")
@@ -86,14 +124,14 @@ def test_expression_rich_compare_creates_required_constraints():
     greater_equal = left >= right
 
     assert less_equal.op() == "<="
-    assert less_equal.strength() == pytest.approx(kiwi.strength.required)
+    assert less_equal.strength() == kiwi.strength.required
     assert_expression_shape(less_equal.expression(), 15, [(foo, 10), (bar, -1)])
 
     assert equal.op() == "=="
-    assert equal.strength() == pytest.approx(kiwi.strength.required)
+    assert equal.strength() == kiwi.strength.required
 
     assert greater_equal.op() == ">="
-    assert greater_equal.strength() == pytest.approx(kiwi.strength.required)
+    assert greater_equal.strength() == kiwi.strength.required
 
 
 # Upstream: tests/SolverTest.cpp :: ManagingConstraints
