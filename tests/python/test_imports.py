@@ -31,3 +31,6 @@ def test_temporary_shim_is_explicit():
     assert cext.__kiwi_version__.endswith("+shim")
     assert isinstance(cext.strength.required, (int, float))
     assert isinstance(native.strength.required, (int, float))
+    assert native.DuplicateConstraint is importlib.import_module(
+        "kiwisolver"
+    ).DuplicateConstraint

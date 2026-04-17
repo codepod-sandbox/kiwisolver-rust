@@ -1,26 +1,30 @@
-use pyo3::create_exception;
-use pyo3::exceptions::PyException;
 use pyo3::prelude::*;
+use pyo3::types::PyType;
 
-create_exception!(_kiwisolver_native, BadRequiredStrength, PyException);
-create_exception!(_kiwisolver_native, DuplicateConstraint, PyException);
-create_exception!(_kiwisolver_native, DuplicateEditVariable, PyException);
-create_exception!(_kiwisolver_native, UnknownConstraint, PyException);
-create_exception!(_kiwisolver_native, UnknownEditVariable, PyException);
-create_exception!(_kiwisolver_native, UnsatisfiableConstraint, PyException);
+const EXCEPTION_NAMES: &[&str] = &[
+    "BadRequiredStrength",
+    "DuplicateConstraint",
+    "DuplicateEditVariable",
+    "UnknownConstraint",
+    "UnknownEditVariable",
+    "UnsatisfiableConstraint",
+];
 
-pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("BadRequiredStrength", m.py().get_type::<BadRequiredStrength>())?;
-    m.add("DuplicateConstraint", m.py().get_type::<DuplicateConstraint>())?;
-    m.add(
-        "DuplicateEditVariable",
-        m.py().get_type::<DuplicateEditVariable>(),
-    )?;
-    m.add("UnknownConstraint", m.py().get_type::<UnknownConstraint>())?;
-    m.add("UnknownEditVariable", m.py().get_type::<UnknownEditVariable>())?;
-    m.add(
-        "UnsatisfiableConstraint",
-        m.py().get_type::<UnsatisfiableConstraint>(),
-    )?;
+pub fn register(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    let exceptions = PyModule::import(py, "kiwisolver.exceptions")?;
+
+    for name in EXCEPTION_NAMES {
+        m.add(*name, exceptions.getattr(*name)?)?;
+    }
+
     Ok(())
+}
+
+pub fn get_exception_type<'py>(
+    py: Python<'py>,
+    name: &str,
+) -> PyResult<Bound<'py, PyType>> {
+    Ok(PyModule::import(py, "kiwisolver.exceptions")?
+        .getattr(name)?
+        .cast_into()?)
 }

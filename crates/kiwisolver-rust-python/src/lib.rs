@@ -25,7 +25,7 @@ fn kiwisolver(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Expression>()?;
     m.add_class::<Constraint>()?;
     m.add_class::<Solver>()?;
-    errors::register(m)?;
+    errors::register(_py, m)?;
     strength::register(_py, m)?;
     Ok(())
 }

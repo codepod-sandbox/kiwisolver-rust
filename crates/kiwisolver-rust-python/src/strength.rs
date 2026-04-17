@@ -1,5 +1,7 @@
 use pyo3::prelude::*;
 
+use crate::errors;
+
 pub const REQUIRED: f64 = 1_001_001_000.0;
 pub const STRONG: f64 = 1_000_000.0;
 pub const MEDIUM: f64 = 1_000.0;
@@ -31,8 +33,18 @@ impl Strength {
     }
 
     #[pyo3(signature = (a, b, c, weight=1.0))]
-    fn create(&self, a: f64, b: f64, c: f64, weight: f64) -> f64 {
-        ((a * STRONG) + (b * MEDIUM) + c) * weight
+    fn create(&self, py: Python<'_>, a: f64, b: f64, c: f64, weight: f64) -> PyResult<f64> {
+        for component in [a, b, c] {
+            if !(0.0..=1000.0).contains(&component) {
+                let exc = errors::get_exception_type(py, "BadRequiredStrength")?;
+                return Err(PyErr::from_type(
+                    exc,
+                    "strength components must be within [0, 1000]",
+                ));
+            }
+        }
+
+        Ok(((a * STRONG) + (b * MEDIUM) + c) * weight)
     }
 }
 

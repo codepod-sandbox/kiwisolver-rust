@@ -8,7 +8,7 @@
 """Temporary compatibility shim for the renamed native module.
 
 This keeps the vendored Python package importable while the Rust native module
-still exposes only the minimal scaffolded surface.
+surface is still being filled in incrementally.
 """
 
 from __future__ import annotations
@@ -28,12 +28,7 @@ __kiwi_version__ = "1.5.0+shim"
 
 
 class _Strength:
-    """Explicit placeholder for upstream strength exports.
-
-    The upstream API publishes a singleton `strength` object. The scaffolded
-    Rust module does not expose it yet, so this local shim keeps the package
-    importable without pretending the native implementation is complete.
-    """
+    """Fallback implementation used only until native `strength` is available."""
 
     weak = 1.0
     medium = 1000.0
