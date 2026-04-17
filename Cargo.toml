@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/kiwisolver-rust-python"]
+resolver = "2"
