@@ -1,18 +1,13 @@
+mod constraint;
 mod errors;
+mod expression;
 mod strength;
 mod variable;
 
+use constraint::Constraint;
+use expression::{Expression, Term};
 use pyo3::prelude::*;
 use variable::Variable;
-
-#[pyclass(module = "kiwisolver._kiwisolver_native")]
-struct Term;
-
-#[pyclass(module = "kiwisolver._kiwisolver_native")]
-struct Expression;
-
-#[pyclass(module = "kiwisolver._kiwisolver_native")]
-struct Constraint;
 
 #[pyclass(module = "kiwisolver._kiwisolver_native")]
 struct Solver;

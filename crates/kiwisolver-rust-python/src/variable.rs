@@ -1,6 +1,9 @@
 use pyo3::prelude::*;
 use pyo3::types::PyAny;
 
+use crate::constraint;
+use crate::expression::{self, Expression};
+
 #[pyclass(module = "kiwisolver._kiwisolver_native")]
 pub struct Variable {
     name: String,
@@ -47,5 +50,74 @@ impl Variable {
 
     fn __repr__(&self) -> String {
         format!("Variable('{}')", self.name)
+    }
+
+    fn __mul__(slf: Py<Self>, py: Python<'_>, other: f64) -> PyResult<Py<expression::Term>> {
+        expression::create_term(py, slf, other)
+    }
+
+    fn __rmul__(slf: Py<Self>, py: Python<'_>, other: f64) -> PyResult<Py<expression::Term>> {
+        expression::create_term(py, slf, other)
+    }
+
+    fn __add__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
+        expression::create_expression(
+            py,
+            expression::ExpressionData::from_variable(slf).add(py, &expression::operand_to_expression(other)?),
+        )
+    }
+
+    fn __radd__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
+        expression::create_expression(
+            py,
+            expression::operand_to_expression(other)?.add(py, &expression::ExpressionData::from_variable(slf)),
+        )
+    }
+
+    fn __sub__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
+        expression::create_expression(
+            py,
+            expression::ExpressionData::from_variable(slf).subtract(py, &expression::operand_to_expression(other)?),
+        )
+    }
+
+    fn __rsub__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<Expression>> {
+        expression::create_expression(
+            py,
+            expression::operand_to_expression(other)?.subtract(py, &expression::ExpressionData::from_variable(slf)),
+        )
+    }
+
+    fn __eq__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+        constraint::create_constraint(
+            py,
+            expression::ExpressionData::from_variable(slf).subtract(py, &expression::operand_to_expression(other)?),
+            "==",
+            crate::strength::REQUIRED,
+        )
+    }
+
+    fn __ge__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+        constraint::create_constraint(
+            py,
+            expression::ExpressionData::from_variable(slf).subtract(py, &expression::operand_to_expression(other)?),
+            ">=",
+            crate::strength::REQUIRED,
+        )
+    }
+
+    fn __le__(slf: Py<Self>, py: Python<'_>, other: &Bound<'_, PyAny>) -> PyResult<Py<constraint::Constraint>> {
+        constraint::create_constraint(
+            py,
+            expression::ExpressionData::from_variable(slf).subtract(py, &expression::operand_to_expression(other)?),
+            "<=",
+            crate::strength::REQUIRED,
+        )
+    }
+}
+
+impl Variable {
+    pub(crate) fn current_value(&self) -> f64 {
+        self.value
     }
 }

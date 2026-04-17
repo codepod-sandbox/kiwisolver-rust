@@ -38,3 +38,27 @@ def test_native_duplicate_constraint_matches_public_exception():
 def test_strength_create_rejects_out_of_range_components():
     with pytest.raises(kiwi.BadRequiredStrength):
         native.strength.create(1001, 0, 0)
+
+
+def test_variable_multiplication_creates_term():
+    width = kiwi.Variable("width")
+
+    term = 2 * width
+
+    assert isinstance(term, kiwi.Term)
+
+
+def test_expression_addition_creates_expression():
+    width = kiwi.Variable("width")
+
+    expr = 2 * width + 10
+
+    assert isinstance(expr, kiwi.Expression)
+
+
+def test_constraint_creation_with_required_strength():
+    width = kiwi.Variable("width")
+
+    constraint = (width >= 10) | "required"
+
+    assert isinstance(constraint, kiwi.Constraint)
