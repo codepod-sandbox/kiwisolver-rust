@@ -49,6 +49,9 @@ jobs:
       - name: Install Python tools
         run: python -m pip install --upgrade pip maturin pytest
 
+      - name: Install package for Python tests
+        run: maturin develop
+
       - name: Run Rust tests
         run: cargo test -p kiwisolver-rust-python
 
