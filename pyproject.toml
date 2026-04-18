@@ -11,6 +11,10 @@ requires-python = ">=3.10"
 manifest-path = "crates/kiwisolver-rust-python/Cargo.toml"
 python-source = "python"
 module-name = "kiwisolver._kiwisolver_native"
+include = [
+  { path = "third_party/cassowary-fork/*", format = "sdist" },
+  { path = "third_party/cassowary-fork/**/*", format = "sdist" },
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests/python"]
