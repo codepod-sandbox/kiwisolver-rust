@@ -1,0 +1,78 @@
+Upstream kiwisolver 1.5.0 native surface audit
+
+Module: `kiwisolver._cext`
+Package re-exports: `kiwisolver`
+Release snapshot: `nucleic/kiwi` commit `5e76d91fd77dc443cb0db36e7398fc13844a0524`
+Provenance: source-derived from inspected release files plus local CPython-facing inspection of the installed/inspectable surface shape where available; not yet release-verified against the exact PyPI sdist bytes.
+
+Module exports
+- `Variable` (source-derived from `py/src/kiwisolver.cpp`)
+- `Term` (source-derived from `py/src/kiwisolver.cpp`)
+- `Expression` (source-derived from `py/src/kiwisolver.cpp`)
+- `Constraint` (source-derived from `py/src/kiwisolver.cpp`)
+- `Solver` (source-derived from `py/src/kiwisolver.cpp`)
+- `strength` (source-derived from `py/src/kiwisolver.cpp` and `py/src/strength.cpp`)
+- `__version__` (source-derived from `py/src/kiwisolver.cpp`; exact value needs release verification)
+- `__kiwi_version__` (source-derived from `py/src/kiwisolver.cpp`; exact value needs release verification)
+
+Package-level exports from `kiwisolver.__init__`
+- `BadRequiredStrength` (source-derived from `py/kiwisolver/__init__.py` and `py/src/kiwisolver.cpp`)
+- `Constraint` (source-derived from `py/kiwisolver/__init__.py`)
+- `DuplicateConstraint` (source-derived from `py/kiwisolver/__init__.py` and `py/src/kiwisolver.cpp`)
+- `DuplicateEditVariable` (source-derived from `py/kiwisolver/__init__.py` and `py/src/kiwisolver.cpp`)
+- `Expression` (source-derived from `py/kiwisolver/__init__.py`)
+- `Solver` (source-derived from `py/kiwisolver/__init__.py`)
+- `Term` (source-derived from `py/kiwisolver/__init__.py`)
+- `UnknownConstraint` (source-derived from `py/kiwisolver/__init__.py` and `py/src/kiwisolver.cpp`)
+- `UnknownEditVariable` (source-derived from `py/kiwisolver/__init__.py` and `py/src/kiwisolver.cpp`)
+- `UnsatisfiableConstraint` (source-derived from `py/kiwisolver/__init__.py` and `py/src/kiwisolver.cpp`)
+- `Variable` (source-derived from `py/kiwisolver/__init__.py`)
+- `__kiwi_version__` (source-derived from `py/kiwisolver/__init__.py`)
+- `__version__` (source-derived from `py/kiwisolver/__init__.py`)
+- `strength` (source-derived from `py/kiwisolver/__init__.py`)
+
+Exception classes
+- `BadRequiredStrength` (source-derived from `py/kiwisolver/exceptions.py`)
+- `DuplicateConstraint` (source-derived from `py/kiwisolver/exceptions.py`)
+- `DuplicateEditVariable` (source-derived from `py/kiwisolver/exceptions.py`)
+- `UnknownConstraint` (source-derived from `py/kiwisolver/exceptions.py`)
+- `UnknownEditVariable` (source-derived from `py/kiwisolver/exceptions.py`)
+- `UnsatisfiableConstraint` (source-derived from `py/kiwisolver/exceptions.py`)
+
+`strength` singleton surface
+- Properties: `weak`, `medium`, `strong`, `required` (source-derived from `py/src/strength.cpp`)
+- Method: `create(a, b, c, weight=1.0)` (source-derived from `py/src/strength.cpp`)
+
+`Variable`
+- Constructor: `Variable(name="", context=None)` (source-derived from `py/src/variable.cpp`)
+- Methods/properties: `name()`, `setName(name)`, `value()`, `context()`, `setContext(context)` (source-derived from `py/src/variable.cpp`)
+- Operators: unary `-`, `+`, `-`, `*`, `/`, `==`, `<=`, `>=` (source-derived from `py/src/variable.cpp`; exact Python dispatch behavior needs runtime verification)
+- Not hashable (`__hash__ = None`) (source-derived from `py/kiwisolver/_cext.pyi`)
+
+`Term`
+- Constructor: `Term(variable, coefficient=1.0)` (source-derived from `py/src/term.cpp`)
+- Methods/properties: `variable()`, `coefficient()`, `value()` (source-derived from `py/src/term.cpp`)
+- Operators: unary `-`, `+`, `-`, `*`, `/`, `==`, `<=`, `>=` (source-derived from `py/src/term.cpp`; exact Python dispatch behavior needs runtime verification)
+- Not hashable (`__hash__ = None`) (source-derived from `py/kiwisolver/_cext.pyi`)
+
+`Expression`
+- Constructor: `Expression(terms, constant=0.0)` (source-derived from `py/src/expression.cpp`)
+- Methods/properties: `terms()`, `constant()`, `value()` (source-derived from `py/src/expression.cpp`)
+- Operators: unary `-`, `+`, `-`, `*`, `/`, `==`, `<=`, `>=` (source-derived from `py/src/expression.cpp`; exact Python dispatch behavior needs runtime verification)
+- Not hashable (`__hash__ = None`) (source-derived from `py/kiwisolver/_cext.pyi`)
+
+`Constraint`
+- Constructor: `Constraint(expression, op, strength="required")` (source-derived from `py/src/constraint.cpp`)
+- Methods/properties: `expression()`, `op()`, `strength()`, `violated()` (source-derived from `py/src/constraint.cpp`)
+- Operators: `|` and `__or__`/`__ror__` for strength replacement (source-derived from `py/src/constraint.cpp`)
+
+`Solver`
+- Constructor: `Solver()` (source-derived from `py/src/solver.cpp`)
+- Methods: `addConstraint()`, `removeConstraint()`, `hasConstraint()`, `addEditVariable()`, `removeEditVariable()`, `hasEditVariable()`, `suggestValue()`, `updateVariables()`, `reset()`, `dump()`, `dumps()` (source-derived from `py/src/solver.cpp`)
+
+Implementation notes from the native C++ sources
+- The extension registers all six exception classes from `kiwisolver.exceptions` and exposes them through the native solver methods. (source-derived)
+- `Constraint`, `Term`, and `Expression` implement rich comparisons for `==`, `<=`, and `>=` only; `!=`, `<`, and `>` are unsupported and should raise `TypeError`. (source-derived from `py/src/{constraint,term,expression}.cpp`; exact message text needs release verification)
+- Strength parsing accepts the four named strings and numeric values; invalid strength strings raise `ValueError`. (source-derived from `py/src/util.h`; exact message text needs release verification)
+- `Solver.__new__` rejects constructor arguments. (source-derived from `py/src/solver.cpp`)
+- `Variable` supports an optional context object stored separately from the native solver variable. (source-derived from `py/src/variable.cpp`; exact GC/descriptor behavior needs release verification)

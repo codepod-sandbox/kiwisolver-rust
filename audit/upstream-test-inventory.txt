@@ -1,0 +1,25 @@
+Upstream kiwisolver 1.5.0 test inventory
+
+Source of truth: `tests/CMakeLists.txt` in release snapshot `5e76d91fd77dc443cb0db36e7398fc13844a0524`
+Provenance: reconstructed from the upstream GitHub release snapshot because the exact PyPI sdist could not be downloaded in the sandbox.
+
+Test files
+- `tests/SimplexTest.cpp`
+- `tests/VariableTest.cpp`
+- `tests/TermTest.cpp`
+- `tests/ExpressionTest.cpp`
+- `tests/ConstraintTest.cpp`
+- `tests/StrengthTest.cpp`
+- `tests/SolverTest.cpp`
+
+Observed focus
+- Solver creation and edit-variable management
+- Constraint add/remove/duplicate/unsatisfiable handling
+- Strength semantics and named strengths
+- Expression/term/variable arithmetic and evaluation
+- Dump output structure and infeasible constraint handling
+
+Assessment
+- No standalone Python test suite was present in the audited release snapshot.
+- The corpus is compact and solver-centric, so the standalone Rust port remains in scope.
+- Compatibility plan for later tasks: port/adapt the upstream C++ tests into the Rust host test harness and add Python smoke/compatibility tests from the audited API surface; do not assume a vendored upstream Python corpus exists unless one is later found.

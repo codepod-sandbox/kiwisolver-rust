@@ -1,0 +1,17 @@
+# Rust build outputs
+/target/
+
+# Python bytecode and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local editable-install extension artifacts
+/python/kiwisolver/_kiwisolver_native*.so
+/python/kiwisolver/_kiwisolver_native*.pyd
+/python/kiwisolver/_kiwisolver_native*.dll
+/python/kiwisolver/lib_kiwisolver_native.*
+/python/kiwisolver/*.dylib
+
+# Common local OS/editor noise
+.DS_Store
