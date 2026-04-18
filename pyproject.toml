@@ -8,6 +8,7 @@ version = "1.5.0.dev0"
 requires-python = ">=3.10"
 
 [tool.maturin]
+manifest-path = "crates/kiwisolver-rust-python/Cargo.toml"
 python-source = "python"
 module-name = "kiwisolver._kiwisolver_native"
 
