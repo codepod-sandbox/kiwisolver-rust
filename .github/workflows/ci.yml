@@ -43,6 +43,12 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Create Python virtualenv
+        run: |
+          python -m venv .venv
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> "$GITHUB_ENV"
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+
       - name: Restore Rust cache
         uses: Swatinem/rust-cache@v2
 
@@ -50,7 +56,7 @@ jobs:
         run: python -m pip install --upgrade pip maturin pytest
 
       - name: Install package for Python tests
-        run: python -m pip install --no-deps .
+        run: maturin develop
 
       - name: Run Rust tests
         run: cargo test -p kiwisolver-rust-python
