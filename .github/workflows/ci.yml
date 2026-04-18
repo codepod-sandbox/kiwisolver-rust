@@ -63,30 +63,66 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
+        include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+            build-sdist: false
+          - os: ubuntu-latest
+            python-version: "3.11"
+            build-sdist: false
+          - os: ubuntu-latest
+            python-version: "3.12"
+            build-sdist: true
+          - os: macos-latest
+            python-version: "3.10"
+            build-sdist: false
+          - os: macos-latest
+            python-version: "3.11"
+            build-sdist: false
+          - os: macos-latest
+            python-version: "3.12"
+            build-sdist: false
+          - os: windows-latest
+            python-version: "3.10"
+            build-sdist: false
+          - os: windows-latest
+            python-version: "3.11"
+            build-sdist: false
+          - os: windows-latest
+            python-version: "3.12"
+            build-sdist: false
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Build wheels
-        if: matrix.os != 'ubuntu-latest'
+        if: ${{ !matrix.build-sdist }}
         uses: PyO3/maturin-action@v1
         with:
           command: build
-          args: --release --out dist
+          rust-toolchain: stable
+          args: --release -i python${{ matrix.python-version }} --out dist
 
       - name: Build wheels and sdist
-        if: matrix.os == 'ubuntu-latest'
+        if: ${{ matrix.build-sdist }}
         uses: PyO3/maturin-action@v1
         with:
           command: build
-          args: --release --sdist --out dist
+          rust-toolchain: stable
+          args: --release -i python${{ matrix.python-version }} --sdist --out dist
+
+      - name: Smoke test wheel
+        run: |
+          python -c "from pathlib import Path; import subprocess, sys; wheel = sorted(Path('dist').glob('*.whl'))[0]; subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--force-reinstall', '--no-deps', str(wheel)])"
+          python -c "import kiwisolver; import kiwisolver._kiwisolver_native"
 
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }}
+          name: dist-${{ matrix.os }}-py${{ matrix.python-version }}
           path: dist
